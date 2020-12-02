@@ -271,7 +271,7 @@ public class Camera2BasicFragment extends Fragment
         @Override
         public void onImageAvailable(ImageReader reader) {
 
-            image =  reader.acquireLatestImage();
+            image =  reader.acquireNextImage();
             buffer = image.getPlanes()[0].getBuffer();
             buffer.rewind();
             bytes = new byte[buffer.capacity()];
