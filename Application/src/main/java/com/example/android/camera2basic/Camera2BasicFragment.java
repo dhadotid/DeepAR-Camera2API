@@ -82,7 +82,7 @@ import ai.deepar.ar.DeepAR;
 public class Camera2BasicFragment extends Fragment
         implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback, AREventListener{
 
-    private static final String LICENSE_KEY = "799718806c5c1db1498ec74f99da2b31e8ba8a503eae4c4d122d05f463c1fc69cdebcbd1ff078e99";
+    private static final String LICENSE_KEY = "6326be1f073882d456539bf29ab840d23b217fff7905fcb4f376fd8ab1678cbfa83a65691c90905d";
 
     /**
      * Conversion from screen rotation to JPEG orientation.
@@ -98,7 +98,7 @@ public class Camera2BasicFragment extends Fragment
         ORIENTATIONS.append(Surface.ROTATION_270, 180);
     }
 
-    private DeepAR deepAR;
+    private DeepAR frameReceiver;
 
     /**
      * Tag for the {@link Log}.
@@ -255,6 +255,10 @@ public class Camera2BasicFragment extends Fragment
      */
     private File mFile;
 
+    private Image image;
+    private ByteBuffer buffer;
+    private byte[] bytes;
+
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
@@ -265,20 +269,15 @@ public class Camera2BasicFragment extends Fragment
         @Override
         public void onImageAvailable(ImageReader reader) {
 
-//            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            image =  reader.acquireLatestImage();
+            buffer = image.getPlanes()[0].getBuffer();
+            buffer.rewind();
+            bytes = new byte[buffer.capacity()];
+            buffer.get(bytes);
 
-            //Added by Yudha | Edit
-//            Log.d(TAG, "I'm an image frame!");
-
-            Image image =  reader.acquireNextImage();
-
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-//            byte[] bytes = new byte[buffer.capacity()];
-            int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
-
-            deepAR.receiveFrame(buffer.get(bytes), 640, 480, getOrientation(rotation), false);
-//            deepAR.receiveFrame(buffer.get(bytes), mTextureView.getWidth(), mTextureView.getHeight(), getOrientation(rotation), false);
+            if (frameReceiver != null) {
+                frameReceiver.receiveFrame(buffer, 640, 480, mSensorOrientation, true);
+            }
 
             image.close();
         }
@@ -286,7 +285,7 @@ public class Camera2BasicFragment extends Fragment
     };
 
     private void setFilter(){
-        deepAR.switchEffect("filter", getFilterPath("lion"));
+        frameReceiver.switchEffect("filter", getFilterPath("blizzard"));
     }
 
     private String getFilterPath(String filterName) {
@@ -480,6 +479,14 @@ public class Camera2BasicFragment extends Fragment
         view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.info).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+        arView = (SurfaceView) view.findViewById(R.id.arSurface);
+
+        arView.getHolder().addCallback(this);
+        arView.setOnClickListener(this);
+        arView.setVisibility(View.GONE);
+        arView.setVisibility(View.VISIBLE);
+
+        initializeDeepAR();
     }
 
     @Override
@@ -576,8 +583,8 @@ public class Camera2BasicFragment extends Fragment
                         Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
                         new CompareSizesByArea());
                 //Added by Yudha | Edit
-                mImageReader = ImageReader.newInstance(largest.getWidth() / 16, largest.getHeight() / 16,
-                        ImageFormat.YUV_420_888, /*maxImages*/2);
+                mImageReader = ImageReader.newInstance(640, 480,
+                        ImageFormat.YUV_420_888, /*maxImages*/5);
                 mImageReader.setOnImageAvailableListener(
                         mOnImageAvailableListener, mBackgroundHandler);
 
@@ -962,15 +969,12 @@ public class Camera2BasicFragment extends Fragment
                 takePicture();
                 break;
             }
+            case R.id.arSurface: {
+                frameReceiver.onClick();
+                break;
+            }
             case R.id.info: {
                 setFilter();
-//                Activity activity = getActivity();
-//                if (null != activity) {
-//                    new AlertDialog.Builder(activity)
-//                            .setMessage(R.string.intro_message)
-//                            .setPositiveButton(android.R.string.ok, null)
-//                            .show();
-//                }
                 break;
             }
         }
@@ -984,10 +988,10 @@ public class Camera2BasicFragment extends Fragment
     }
 
     private void initializeDeepAR() {
-        if (deepAR!=null) return;
-        deepAR = new DeepAR(getContext());
-        deepAR.setLicenseKey(LICENSE_KEY);
-        deepAR.initialize(getContext(), this);
+        if (frameReceiver != null) return;
+        frameReceiver = new DeepAR(getContext());
+        frameReceiver.setLicenseKey(LICENSE_KEY);
+        frameReceiver.initialize(getContext(), this);
     }
 
     @Override
@@ -1050,6 +1054,27 @@ public class Camera2BasicFragment extends Fragment
 
     }
 
+    @Override
+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+        if (frameReceiver == null)
+            initializeDeepAR();
+        frameReceiver.setRenderSurface(surfaceHolder.getSurface(), surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) {
+        if (frameReceiver == null)
+            initializeDeepAR();
+        frameReceiver.setRenderSurface(surfaceHolder.getSurface(), width, height);
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+        if (frameReceiver != null) {
+            frameReceiver.setRenderSurface(null, 0, 0);
+        }
+    }
+    
     /**
      * Saves a JPEG {@link Image} into the specified {@link File}.
      */
