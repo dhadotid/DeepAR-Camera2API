@@ -80,9 +80,11 @@ import ai.deepar.ar.AREventListener;
 import ai.deepar.ar.DeepAR;
 
 public class Camera2BasicFragment extends Fragment
-        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback, AREventListener{
+        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback, AREventListener,
+        SurfaceHolder.Callback {
 
-    private static final String LICENSE_KEY = "6326be1f073882d456539bf29ab840d23b217fff7905fcb4f376fd8ab1678cbfa83a65691c90905d";
+//    private static final String LICENSE_KEY = "6326be1f073882d456539bf29ab840d23b217fff7905fcb4f376fd8ab1678cbfa83a65691c90905d";
+    private static final String LICENSE_KEY = "799718806c5c1db1498ec74f99da2b31e8ba8a503eae4c4d122d05f463c1fc69cdebcbd1ff078e99";
 
     /**
      * Conversion from screen rotation to JPEG orientation.
@@ -153,7 +155,7 @@ public class Camera2BasicFragment extends Fragment
         public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
             prevWidth = width;
             prevHeight = height;
-            initializeDeepAR();
+//            initializeDeepAR();
             openCamera(width, height);
         }
 
@@ -165,14 +167,14 @@ public class Camera2BasicFragment extends Fragment
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
             Log.e("Surface", "Surface Destroyed");
-            if (deepAR != null)
-                deepAR.setRenderSurface(null, 0, 0);
+//            if (frameReceiver != null)
+//                frameReceiver.setRenderSurface(null, 0, 0);
             return true;
         }
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture texture) {
-            deepAR.setRenderSurface(new Surface(texture), 640, 480);
+//            frameReceiver.setRenderSurface(new Surface(texture), prevWidth, prevHeight);
         }
 
     };
@@ -285,7 +287,8 @@ public class Camera2BasicFragment extends Fragment
     };
 
     private void setFilter(){
-        frameReceiver.switchEffect("filter", getFilterPath("blizzard"));
+        frameReceiver.switchEffect("filter", getFilterPath("lion"));
+//        frameReceiver.switchEffect("filter", getFilterPath("blizzard"));
     }
 
     private String getFilterPath(String filterName) {
@@ -504,6 +507,7 @@ public class Camera2BasicFragment extends Fragment
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
         // a camera and start preview from here (otherwise, we wait until the surface is ready in
         // the SurfaceTextureListener).
+
         if (mTextureView.isAvailable()) {
             initializeDeepAR();
             openCamera(mTextureView.getWidth(), mTextureView.getHeight());
@@ -522,12 +526,12 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (deepAR == null) {
+        if (frameReceiver == null) {
             return;
         }
-        deepAR.setAREventListener(null);
-        deepAR.release();
-        deepAR = null;
+        frameReceiver.setAREventListener(null);
+        frameReceiver.release();
+        frameReceiver = null;
     }
 
     private void requestCameraPermission() {
@@ -761,6 +765,7 @@ public class Camera2BasicFragment extends Fragment
             mPreviewRequestBuilder
                     = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mPreviewRequestBuilder.addTarget(surface);
+//            mPreviewRequestBuilder.addTarget(arView.getHolder().getSurface());
 
             //Added by Yudha
             mPreviewRequestBuilder.addTarget(mImageSurface);
@@ -837,6 +842,7 @@ public class Camera2BasicFragment extends Fragment
         } else if (Surface.ROTATION_180 == rotation) {
             matrix.postRotate(180, centerX, centerY);
         }
+
         mTextureView.setTransform(matrix);
     }
 
@@ -1058,7 +1064,7 @@ public class Camera2BasicFragment extends Fragment
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         if (frameReceiver == null)
             initializeDeepAR();
-        frameReceiver.setRenderSurface(surfaceHolder.getSurface(), surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
+//        frameReceiver.setRenderSurface(surfaceHolder.getSurface(), surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
     }
 
     @Override

@@ -1,4 +1,4 @@
-#Wed Nov 25 16:34:12 WIB 2020
+#Wed Dec 02 15:45:35 WIB 2020
 base.0=/Users/yudha/AndroidStudioProjects/android-Camera2Basic/Application/build/intermediates/transforms/dexMerger/debug/0
 path.0=classes.dex
 renamed.0=classes.dex

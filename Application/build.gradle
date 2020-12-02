@@ -40,7 +40,7 @@ android {
     buildToolsVersion "27.0.2"
 
     defaultConfig {
-        applicationId "com.deepar.test"
+        applicationId "com.try.deepar"
         minSdkVersion 21
         targetSdkVersion 27
         versionCode 1
